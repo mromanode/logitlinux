@@ -8,6 +8,7 @@ from logging_configuration import configure_logging
 import logging
 import socket
 import subprocess
+import shutil
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ def write_audit_rule(rule_file: str) -> None:
             f.write("-a exit,always -F arch=b32 -S execve -k auditcmd\n")
             f.write("-a exit,always -F arch=b64 -S execve -k auditcmd\n")
 
-        subprocess.run("augenrules --load")
+        subprocess.run(["augenrules", "--load"])
 
         logger.info("Audit rules written successfully.", extra={"hostname": hostname})
     except (OSError, IOError, Exception) as err:
@@ -81,8 +82,8 @@ def move_to_opt() -> None:
             logging_configuration,
             extra={"hostname": hostname},
         )
-        logitlinux_script.rename("/opt/logitlinux/logitlinux.py")
-        logging_configuration.rename("/opt/logitlinux/logging_configuration.py")
+        shutil.copy(logitlinux_script, "/opt/logitlinux/")
+        shutil.copy(logging_configuration, "/opt/logitlinux/")
         logger.info("Moved file successfully.", extra={"hostname": hostname})
     except (OSError, IOError, Exception) as err:
         logger.info("Failed to copy script directory: %s", err, extra={"hostname": hostname})
