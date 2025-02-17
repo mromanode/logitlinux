@@ -20,8 +20,8 @@ def write_audit_rule(rule_file: str) -> None:
 
         rule_file_path = Path(rule_file)
         with rule_file_path.open("a") as f:
-            f.write("-a exit,always -F arch=b32 -S execve -k auditcmd")
-            f.write("-a exit,always -F arch=b32 -S execve -k auditcmd")
+            f.write("-a exit,always -F arch=b32 -S execve -k auditcmd\n")
+            f.write("-a exit,always -F arch=b64 -S execve -k auditcmd\n")
 
         subprocess.run("augenrules --load")
 
