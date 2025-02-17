@@ -34,7 +34,7 @@ def write_audit_rule(rule_file: str) -> None:
 def create_systemd_unit() -> None:
     hostname = socket.gethostname()
     try:
-        rule_file_path = Path("/etc/systemd/system/logitlinux.service")
+        rule_file_path = Path("/usr/lib/systemd/system/logitlinux.service")
 
         logger.info("Writing systemd unit to: %s", rule_file_path, extra={"hostname": hostname})
 
@@ -57,6 +57,9 @@ ExecStart=/usr/bin/python3 /opt/logitlinux/logitlinux.py
 WantedBy=multi-user.target
                 """
             )
+
+        subprocess.run(["systemctl", "daemon-reload"])
+        subprocess.run(["systemctl", "start", "logitlinux.service"])
 
         logger.info("Wrote systemd unit successfully.", extra={"hostname": hostname})
     except (OSError, IOError, Exception) as err:
