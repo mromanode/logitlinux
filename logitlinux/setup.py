@@ -89,6 +89,6 @@ def move_to_opt() -> None:
 
 
 if __name__ == "__main__":
-    write_audit_rule("/etc/audit/audit.rules")
+    write_audit_rule("/etc/audit/rules.d/audit.rules")
     create_systemd_unit()
     move_to_opt()
