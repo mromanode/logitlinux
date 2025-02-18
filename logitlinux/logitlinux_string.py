@@ -156,7 +156,7 @@ def merge_events(audit_events: list[dict[str, str]], journal_events: list[dict[s
 
                 session_start_str = journal_event["session_start"].strftime("%Y-%m-%d %H:%M:%S")  # type: ignore
                 formatted_string = (
-                    f"timestamp={audit_event['timestamp'].strftime('%Y-%m-%d %H:%M:%S')} "  # type: ignore
+                    f"{audit_event['timestamp'].strftime('%Y-%m-%d %H:%M:%S')} "  # type: ignore
                     f"hostname={hostname} "
                     f"user={journal_event['user']} "
                     f"session_start={session_start_str} "
