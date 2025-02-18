@@ -3,17 +3,12 @@ Log it, Linux! core module
 """
 
 from pathlib import Path
-from logging_configuration import configure_logging
 from collections.abc import Iterator
 from datetime import datetime
 
-import logging
 import socket
 import subprocess
 import re
-
-configure_logging()
-logger = logging.getLogger(__name__)
 
 
 def get_hostname() -> str:
@@ -150,18 +145,18 @@ def merge_events(audit_events: list[dict[str, str]], journal_events: list[dict[s
                 and journal_event["session_start"] <= audit_event["timestamp"] <= journal_event["session_end"]
             ):
                 if journal_event["session_end"] != datetime.max:
-                    session_end_str = journal_event["session_end"].strftime("%Y-%m-%d %H:%M:%S")  # type: ignore
+                    session_end_str = journal_event["session_end"].strftime("%d/%m/%Y %H:%M:%S")  # type: ignore
                 else:
                     session_end_str = "Still logged in"
 
-                session_start_str = journal_event["session_start"].strftime("%Y-%m-%d %H:%M:%S")  # type: ignore
+                session_start_str = journal_event["session_start"].strftime("%d/%m/%Y %H:%M:%S")  # type: ignore
                 formatted_string = (
-                    f"{audit_event['timestamp'].strftime('%Y-%m-%d %H:%M:%S')} "  # type: ignore
+                    f"{audit_event['timestamp'].strftime('%d/%m/%Y %H:%M:%S')} "  # type: ignore
                     f"hostname={hostname} "
                     f"user={journal_event['user']} "
                     f"session_start={session_start_str} "
                     f"session_end={session_end_str} "
-                    f"logType=COMMAND command='{audit_event['command']}'"
+                    f"command='{audit_event['command']}'"
                 )
                 formatted_events.append(formatted_string)
                 break
@@ -172,7 +167,6 @@ def merge_events(audit_events: list[dict[str, str]], journal_events: list[dict[s
 if __name__ == "__main__":
     hostname = get_hostname()
     path_log = Path("/var/log/command")
-    logger.info("Script execution begin.", extra={"hostname": hostname})
 
     parsed_audit = parse_audit()
     parsed_journal = parse_journal()
@@ -181,5 +175,3 @@ if __name__ == "__main__":
     with path_log.open("a") as f:
         for line in merged_events_strings:
             f.write(f"{line}\n")
-
-    logger.info("Script execution ended.", extra={"hostname": hostname})
