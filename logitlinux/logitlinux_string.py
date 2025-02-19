@@ -19,6 +19,13 @@ def get_hostname() -> str:
         return socket.gethostname()
 
 
+def getNetworkIp() -> str:
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    s.connect(("<broadcast>", 12345))  # 12345 is random port.
+    return s.getsockname()[0]
+
+
 def stream_ausearch() -> Iterator[str]:
     with subprocess.Popen(
         [
@@ -64,20 +71,26 @@ def parse_audit() -> list[dict[str, str]]:
 
 
 def stream_journalctl() -> Iterator[str]:
-    with subprocess.Popen(["journalctl", "/usr/sbin/sshd"], stdout=subprocess.PIPE, text=True) as proc:
-        if proc.stdout is None:
-            raise RuntimeError("journalctl produced no output")
-        for line in proc.stdout:
-            yield line.strip()
+    secure_log = Path("/var/log/secure")
+    try:
+        with secure_log.open("r") as proc:
+            for line in proc:
+                yield line.strip()
+    except (OSError, FileNotFoundError):
+        with subprocess.Popen(["journalctl", "/usr/sbin/sshd"], stdout=subprocess.PIPE, text=True) as proc:
+            if proc.stdout is None:
+                raise RuntimeError("journalctl produced no output")
+            for line in proc.stdout:
+                yield line.strip()
 
 
 def parse_journal() -> list[dict[str, str]]:
     session_regex = re.compile(
         r"(?:(?P<session_start>[A-Z][a-z]{2}\s\d{2}\s\d{2}:\d{2}:\d{2}).*?sshd\[(?P<pid>\d+)\].*?"
-        r"Accepted (?:password|key) for (?P<user>\w+).*?from (?P<ip>\d{1,3}(?:\.\d{1,3}){3}).*?port (?P<port>\d+))"
+        r"Accepted\s(?:password|key)\sfor\s(?P<user>\w+)\sfrom\s(?P<ip>\d{1,3}(?:\.\d{1,3}){3}).*?port\s(?P<port>\d+))"
         r"|"
-        r"(?P<session_end>[A-Z][a-z]{2}\s\d{2}\s\d{2}:\d{2}:\d{2}).*?sshd\[(?P<d_pid>\d+)\].*?"
-        r"session closed for user (?P<d_user>\w+)"
+        r"(?P<session_end>[A-Z][a-z]{2}\s\d{2}\s\d{2}:\d{2}:\d{2}).*?"
+        r"sshd\[(?P<d_pid>\d+)\].*?session\sclosed\sfor\suser\s(?P<d_user>\w+)"
     )
 
     active_sessions = {}
@@ -126,6 +139,7 @@ def convert_timestamp(timestamp_str: str) -> datetime:
 
 def merge_events(audit_events: list[dict[str, str]], journal_events: list[dict[str, str]]) -> list[str]:
     hostname = get_hostname()
+    local_ip = getNetworkIp()
     formatted_events = []
 
     for audit_event in audit_events:
@@ -153,10 +167,12 @@ def merge_events(audit_events: list[dict[str, str]], journal_events: list[dict[s
                 formatted_string = (
                     f"{audit_event['timestamp'].strftime('%d/%m/%Y %H:%M:%S')} "  # type: ignore
                     f"hostname={hostname} "
+                    f"local_ip={local_ip} "
+                    f"remote_ip={journal_event['ip']} "
                     f"user={journal_event['user']} "
+                    f"command='{audit_event['command']}' "
                     f"session_start={session_start_str} "
                     f"session_end={session_end_str} "
-                    f"command='{audit_event['command']}'"
                 )
                 formatted_events.append(formatted_string)
                 break
