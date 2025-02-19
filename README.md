@@ -41,7 +41,7 @@ It directly address common security concerns, such as:
 
 Clone the repo and execute `setup.py`
 ```
-git clone https://github.com/mromanode/logitlinux.git && python3 setup.py
+git clone https://github.com/mromanode/logitlinux.git && cd logitlinux && python3 setup.py
 ```
 
 ## Usage
